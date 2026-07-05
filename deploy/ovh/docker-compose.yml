@@ -1,0 +1,19 @@
+services:
+  qb2:
+    image: ghcr.io/silverfoxonline/qbittorrent:4.6.7-webui-checkbox-tags
+    container_name: qb2
+    environment:
+      - PUID=0
+      - PGID=0
+      - TZ=Asia/Shanghai
+      - WEBUI_PORT=8180
+      - UMASK=000
+    volumes:
+      - ./config:/config
+      - /pt:/pt
+      - /download:/download
+    ports:
+      - 8180:8180
+      - 48180:48180
+      - 48180:48180/udp
+    restart: unless-stopped

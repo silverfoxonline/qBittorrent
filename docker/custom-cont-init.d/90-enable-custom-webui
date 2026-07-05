@@ -1,0 +1,21 @@
+#!/usr/bin/with-contenv bash
+set -euo pipefail
+
+conf_dir="/config/qBittorrent"
+conf_file="${conf_dir}/qBittorrent.conf"
+webui_root="/app/qbittorrent-webui"
+
+mkdir -p "${conf_dir}"
+touch "${conf_file}"
+
+sed -i \
+    -e '/^WebUI\\AlternativeUIEnabled=/d' \
+    -e '/^WebUI\\RootFolder=/d' \
+    "${conf_file}"
+
+cat >>"${conf_file}" <<EOF
+
+[Preferences]
+WebUI\AlternativeUIEnabled=true
+WebUI\RootFolder=${webui_root}
+EOF

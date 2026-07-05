@@ -500,11 +500,28 @@ window.qBittorrent.ContextMenu = (function() {
             for (let i = 0; i < sortedTags.length; ++i) {
                 const tagName = sortedTags[i];
                 const tagHash = genHash(tagName);
-                const el = new Element('li', {
-                    html: '<a href="#Tag/' + tagHash + '" onclick="event.preventDefault(); torrentSetTagsFN(\'' + tagHash + '\', !event.currentTarget.getElement(\'input[type=checkbox]\').checked);">'
-                        + '<input type="checkbox" onclick="this.checked = !this.checked;"> ' + window.qBittorrent.Misc.escapeHtml(tagName)
-                        + '</a>'
+                const checkbox = new Element('input', {
+                    type: 'checkbox',
+                    'class': 'contextTagCheckbox'
                 });
+                const link = new Element('a', {
+                    href: '#Tag/' + tagHash
+                });
+                link.adopt(checkbox, document.createTextNode(' ' + tagName));
+                link.addEvent('click', function(e) {
+                    e.stop();
+                    const shouldSet = (e.target === this.checkbox) ? this.checkbox.checked : !this.checkbox.checked;
+                    torrentSetTagsFN(this.tagHash, shouldSet);
+                    this.checkbox.checked = shouldSet;
+                    this.checkbox.indeterminate = false;
+                    return false;
+                }.bind({
+                    checkbox: checkbox,
+                    tagHash: tagHash
+                }));
+
+                const el = new Element('li');
+                el.adopt(link);
                 if (i === 0)
                     el.addClass('separator');
                 contextTagList.appendChild(el);

@@ -440,6 +440,11 @@ window.qBittorrent.DynamicTable = (function() {
                 if (!columnsOrder.contains(this.columns[i].name))
                     columnsOrder.push(this.columns[i].name);
 
+            if (this.columns['select'] !== undefined) {
+                columnsOrder.erase('select');
+                columnsOrder.unshift('select');
+            }
+
             for (let i = 0; i < this.columns.length; ++i)
                 this.columns[i] = this.columns[columnsOrder[i]];
         },
@@ -590,6 +595,9 @@ window.qBittorrent.DynamicTable = (function() {
                 this.selectedRows.push(tr.rowId);
                 if (!tr.hasClass('selected'))
                     tr.addClass('selected');
+                const checkbox = tr.getElement('input.torrentSelectionCheckbox');
+                if (checkbox !== null)
+                    checkbox.checked = true;
             }
         },
 
@@ -643,10 +651,14 @@ window.qBittorrent.DynamicTable = (function() {
         setRowClass: function() {
             const that = this;
             this.tableBody.getElements('tr').each(function(tr) {
-                if (that.isRowSelected(tr.rowId))
+                const isSelected = that.isRowSelected(tr.rowId);
+                if (isSelected)
                     tr.addClass('selected');
                 else
                     tr.removeClass('selected');
+                const checkbox = tr.getElement('input.torrentSelectionCheckbox');
+                if (checkbox !== null)
+                    checkbox.checked = isSelected;
             });
         },
 
@@ -748,22 +760,8 @@ window.qBittorrent.DynamicTable = (function() {
                     });
                     tr.addEvent('click', function(e) {
                         e.stop();
-                        if (e.control || e.meta) {
-                            // CTRL/CMD ⌘ key was pressed
-                            if (this._this.isRowSelected(this.rowId))
-                                this._this.deselectRow(this.rowId);
-                            else
-                                this._this.selectRow(this.rowId);
-                        }
-                        else if (e.shift && (this._this.selectedRows.length == 1)) {
-                            // Shift key was pressed
-                            this._this.selectRows(this._this.getSelectedRowId(), this.rowId);
-                        }
-                        else {
-                            // Simple selection
-                            this._this.deselectAll();
-                            this._this.selectRow(this.rowId);
-                        }
+                        this._this.deselectAll();
+                        this._this.selectRow(this.rowId);
                         return false;
                     });
                     tr.addEvent('touchstart', function(e) {
@@ -909,6 +907,7 @@ window.qBittorrent.DynamicTable = (function() {
         Extends: DynamicTable,
 
         initColumns: function() {
+            this.newColumn('select', 'text-align: center;', '', 24, true);
             this.newColumn('priority', '', '#', 30, true);
             this.newColumn('state_icon', 'cursor: default', '', 22, true);
             this.newColumn('name', '', 'QBT_TR(Name)QBT_TR[CONTEXT=TransferListModel]', 200, true);
@@ -945,6 +944,11 @@ window.qBittorrent.DynamicTable = (function() {
             this.columns['state_icon'].onclick = '';
             this.columns['state_icon'].dataProperties[0] = 'state';
 
+            this.columns['select'].dataProperties[0] = 'rowId';
+            this.columns['select'].compareRows = function() {
+                return 0;
+            };
+
             this.columns['num_seeds'].dataProperties.push('num_complete');
             this.columns['num_leechs'].dataProperties.push('num_incomplete');
             this.columns['time_active'].dataProperties.push('seeding_time');
@@ -953,6 +957,33 @@ window.qBittorrent.DynamicTable = (function() {
         },
 
         initColumnsFunctions: function() {
+
+            // select
+            this.columns['select'].updateTd = function(td, row) {
+                if (td.getChildren('input.torrentSelectionCheckbox').length === 0) {
+                    const checkbox = new Element('input', {
+                        type: 'checkbox',
+                        'class': 'torrentSelectionCheckbox',
+                        title: 'QBT_TR(Select)QBT_TR[CONTEXT=TransferListWidget]'
+                    });
+                    checkbox.addEvent('click', function(e) {
+                        e.stop();
+                        if (this._table.isRowSelected(this._rowId))
+                            this._table.deselectRow(this._rowId);
+                        else
+                            this._table.selectRow(this._rowId);
+                        return false;
+                    });
+                    td.adopt(checkbox);
+                }
+
+                const checkbox = td.getChildren('input.torrentSelectionCheckbox')[0];
+                checkbox._table = this.table;
+                checkbox._rowId = row.rowId;
+                checkbox.checked = this.table.isRowSelected(row.rowId);
+            }.bind({
+                table: this
+            });
 
             // state_icon
             this.columns['state_icon'].updateTd = function(td, row) {

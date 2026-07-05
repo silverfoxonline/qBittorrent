@@ -5,7 +5,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY src/webui/www /webui
-RUN lrelease /webui/translations/*.ts
+RUN /usr/lib/qt6/bin/lrelease /webui/translations/*.ts
 
 FROM lscr.io/linuxserver/qbittorrent:4.6.7
 

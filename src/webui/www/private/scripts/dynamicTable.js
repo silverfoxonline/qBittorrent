@@ -642,10 +642,7 @@ window.qBittorrent.DynamicTable = (function() {
         reselectRows: function(rowIds) {
             this.deselectAll();
             this.selectedRows = rowIds.slice();
-            this.tableBody.getElements('tr').each(function(tr) {
-                if (rowIds.indexOf(tr.rowId) > -1)
-                    tr.addClass('selected');
-            });
+            this.setRowClass();
         },
 
         setRowClass: function() {
@@ -760,8 +757,22 @@ window.qBittorrent.DynamicTable = (function() {
                     });
                     tr.addEvent('click', function(e) {
                         e.stop();
-                        this._this.deselectAll();
-                        this._this.selectRow(this.rowId);
+                        if (e.control || e.meta) {
+                            // CTRL/CMD key was pressed
+                            if (this._this.isRowSelected(this.rowId))
+                                this._this.deselectRow(this.rowId);
+                            else
+                                this._this.selectRow(this.rowId);
+                        }
+                        else if (e.shift && (this._this.selectedRows.length == 1)) {
+                            // Shift key was pressed
+                            this._this.selectRows(this._this.getSelectedRowId(), this.rowId);
+                        }
+                        else {
+                            // Simple selection
+                            this._this.deselectAll();
+                            this._this.selectRow(this.rowId);
+                        }
                         return false;
                     });
                     tr.addEvent('touchstart', function(e) {

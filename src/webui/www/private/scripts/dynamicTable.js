@@ -978,12 +978,16 @@ window.qBittorrent.DynamicTable = (function() {
                         title: 'QBT_TR(Select)QBT_TR[CONTEXT=TransferListWidget]'
                     });
                     checkbox.addEvent('click', function(e) {
-                        e.stop();
+                        e.stopPropagation();
                         if (this._table.isRowSelected(this._rowId))
                             this._table.deselectRow(this._rowId);
                         else
                             this._table.selectRow(this._rowId);
-                        return false;
+
+                        const table = this._table;
+                        setTimeout(function() {
+                            table.setRowClass();
+                        }, 0);
                     });
                     td.adopt(checkbox);
                 }

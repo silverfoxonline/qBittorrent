@@ -435,97 +435,114 @@ window.qBittorrent.ContextMenu = (function() {
                 this.setItemChecked('autoTorrentManagement', all_are_auto_tmm);
             }
 
-            const contextTagList = $('contextTagList');
-            for (const tagHash in tagList) {
-                const checkbox = contextTagList.getElement('a[href=#Tag/' + tagHash + '] input[type=checkbox]');
+            $$('a[href^=#Tag/] input[type=checkbox]').each(function(checkbox) {
+                const tagHash = checkbox.getParent('a').get('href').split('/')[1];
                 const checkboxState = tagsSelectionState[tagHash];
+                if (checkboxState === undefined)
+                    return;
                 checkbox.indeterminate = checkboxState.indeterminate;
                 checkbox.checked = checkboxState.checked;
-            }
+            });
+
+            updateTorrentActionToolbar();
         },
 
         updateCategoriesSubMenu: function(category_list) {
-            const categoryList = $('contextCategoryList');
-            categoryList.getChildren().each(c => c.destroy());
-            categoryList.appendChild(new Element('li', {
-                html: '<a href="javascript:torrentNewCategoryFN();"><img src="images/list-add.svg" alt="QBT_TR(New...)QBT_TR[CONTEXT=TransferListWidget]"/> QBT_TR(New...)QBT_TR[CONTEXT=TransferListWidget]</a>'
-            }));
-            categoryList.appendChild(new Element('li', {
-                html: '<a href="javascript:torrentSetCategoryFN(0);"><img src="images/edit-clear.svg" alt="QBT_TR(Reset)QBT_TR[CONTEXT=TransferListWidget]"/> QBT_TR(Reset)QBT_TR[CONTEXT=TransferListWidget]</a>'
-            }));
+            const updateCategoryList = function(categoryList) {
+                if (categoryList === null)
+                    return;
 
-            const sortedCategories = [];
-            Object.each(category_list, function(category) {
-                sortedCategories.push(category.name);
-            });
-            sortedCategories.sort();
+                categoryList.getChildren().each(c => c.destroy());
+                categoryList.appendChild(new Element('li', {
+                    html: '<a href="javascript:torrentNewCategoryFN();"><img src="images/list-add.svg" alt="QBT_TR(New...)QBT_TR[CONTEXT=TransferListWidget]"/> QBT_TR(New...)QBT_TR[CONTEXT=TransferListWidget]</a>'
+                }));
+                categoryList.appendChild(new Element('li', {
+                    html: '<a href="javascript:torrentSetCategoryFN(0);"><img src="images/edit-clear.svg" alt="QBT_TR(Reset)QBT_TR[CONTEXT=TransferListWidget]"/> QBT_TR(Reset)QBT_TR[CONTEXT=TransferListWidget]</a>'
+                }));
 
-            let first = true;
-            Object.each(sortedCategories, function(categoryName) {
-                const categoryHash = genHash(categoryName);
-                const el = new Element('li', {
-                    html: '<a href="javascript:torrentSetCategoryFN(\'' + categoryHash + '\');"><img src="images/view-categories.svg"/> ' + window.qBittorrent.Misc.escapeHtml(categoryName) + '</a>'
+                const sortedCategories = [];
+                Object.each(category_list, function(category) {
+                    sortedCategories.push(category.name);
                 });
-                if (first) {
-                    el.addClass('separator');
-                    first = false;
-                }
-                categoryList.appendChild(el);
-            });
+                sortedCategories.sort();
+
+                let first = true;
+                Object.each(sortedCategories, function(categoryName) {
+                    const categoryHash = genHash(categoryName);
+                    const el = new Element('li', {
+                        html: '<a href="javascript:torrentSetCategoryFN(\'' + categoryHash + '\');"><img src="images/view-categories.svg"/> ' + window.qBittorrent.Misc.escapeHtml(categoryName) + '</a>'
+                    });
+                    if (first) {
+                        el.addClass('separator');
+                        first = false;
+                    }
+                    categoryList.appendChild(el);
+                });
+            };
+
+            updateCategoryList($('contextCategoryList'));
+            updateCategoryList($('toolbarCategoryMenu'));
         },
 
         updateTagsSubMenu: function(tagList) {
-            const contextTagList = $('contextTagList');
-            while (contextTagList.firstChild !== null)
-                contextTagList.removeChild(contextTagList.firstChild);
+            const updateTagList = function(contextTagList) {
+                if (contextTagList === null)
+                    return;
 
-            contextTagList.appendChild(new Element('li', {
-                html: '<a href="javascript:torrentAddTagsFN();">'
-                    + '<img src="images/list-add.svg" alt="QBT_TR(Add...)QBT_TR[CONTEXT=TransferListWidget]"/>'
-                    + ' QBT_TR(Add...)QBT_TR[CONTEXT=TransferListWidget]'
-                    + '</a>'
-            }));
-            contextTagList.appendChild(new Element('li', {
-                html: '<a href="javascript:torrentRemoveAllTagsFN();">'
-                    + '<img src="images/edit-clear.svg" alt="QBT_TR(Remove All)QBT_TR[CONTEXT=TransferListWidget]"/>'
-                    + ' QBT_TR(Remove All)QBT_TR[CONTEXT=TransferListWidget]'
-                    + '</a>'
-            }));
+                while (contextTagList.firstChild !== null)
+                    contextTagList.removeChild(contextTagList.firstChild);
 
-            const sortedTags = [];
-            for (const key in tagList)
-                sortedTags.push(tagList[key].name);
-            sortedTags.sort();
-
-            for (let i = 0; i < sortedTags.length; ++i) {
-                const tagName = sortedTags[i];
-                const tagHash = genHash(tagName);
-                const checkbox = new Element('input', {
-                    type: 'checkbox',
-                    'class': 'contextTagCheckbox'
-                });
-                const link = new Element('a', {
-                    href: '#Tag/' + tagHash
-                });
-                link.adopt(checkbox, document.createTextNode(' ' + tagName));
-                link.addEvent('click', function(e) {
-                    e.stop();
-                    const shouldSet = (e.target === this.checkbox) ? this.checkbox.checked : !this.checkbox.checked;
-                    torrentSetTagsFN(this.tagHash, shouldSet);
-                    this.checkbox.checked = shouldSet;
-                    this.checkbox.indeterminate = false;
-                    return false;
-                }.bind({
-                    checkbox: checkbox,
-                    tagHash: tagHash
+                contextTagList.appendChild(new Element('li', {
+                    html: '<a href="javascript:torrentAddTagsFN();">'
+                        + '<img src="images/list-add.svg" alt="QBT_TR(Add...)QBT_TR[CONTEXT=TransferListWidget]"/>'
+                        + ' QBT_TR(Add...)QBT_TR[CONTEXT=TransferListWidget]'
+                        + '</a>'
+                }));
+                contextTagList.appendChild(new Element('li', {
+                    html: '<a href="javascript:torrentRemoveAllTagsFN();">'
+                        + '<img src="images/edit-clear.svg" alt="QBT_TR(Remove All)QBT_TR[CONTEXT=TransferListWidget]"/>'
+                        + ' QBT_TR(Remove All)QBT_TR[CONTEXT=TransferListWidget]'
+                        + '</a>'
                 }));
 
-                const el = new Element('li');
-                el.adopt(link);
-                if (i === 0)
-                    el.addClass('separator');
-                contextTagList.appendChild(el);
-            }
+                const sortedTags = [];
+                for (const key in tagList)
+                    sortedTags.push(tagList[key].name);
+                sortedTags.sort();
+
+                for (let i = 0; i < sortedTags.length; ++i) {
+                    const tagName = sortedTags[i];
+                    const tagHash = genHash(tagName);
+                    const checkbox = new Element('input', {
+                        type: 'checkbox',
+                        'class': 'contextTagCheckbox'
+                    });
+                    const link = new Element('a', {
+                        href: '#Tag/' + tagHash
+                    });
+                    link.adopt(checkbox, document.createTextNode(' ' + tagName));
+                    link.addEvent('click', function(e) {
+                        e.stop();
+                        const shouldSet = (e.target === this.checkbox) ? this.checkbox.checked : !this.checkbox.checked;
+                        torrentSetTagsFN(this.tagHash, shouldSet);
+                        this.checkbox.checked = shouldSet;
+                        this.checkbox.indeterminate = false;
+                        return false;
+                    }.bind({
+                        checkbox: checkbox,
+                        tagHash: tagHash
+                    }));
+
+                    const el = new Element('li');
+                    el.adopt(link);
+                    if (i === 0)
+                        el.addClass('separator');
+                    contextTagList.appendChild(el);
+                }
+            };
+
+            updateTagList($('contextTagList'));
+            updateTagList($('toolbarTagMenu'));
         }
     });
 

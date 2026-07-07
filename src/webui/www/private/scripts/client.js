@@ -785,6 +785,7 @@ window.addEvent('load', function() {
                             updateTags = true; // Always to update All tag
                         });
                     torrentsTable.updateTable(full_update);
+                    updateTorrentActionToolbar();
                     torrentsTable.altRow();
                     if (response['server_state']) {
                         const tmp = response['server_state'];

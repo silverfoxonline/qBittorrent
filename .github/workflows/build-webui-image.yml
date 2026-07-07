@@ -1,9 +1,6 @@
 name: Build WebUI image
 
 on:
-  push:
-    branches:
-      - webui-checkbox-tags
   workflow_dispatch:
 
 permissions:

@@ -106,6 +106,13 @@
                 <a id="deleteButton" class="divider"><img class="mochaToolButton" title="QBT_TR(Remove)QBT_TR[CONTEXT=TransferListWidget]" src="images/list-remove.svg" alt="QBT_TR(Remove)QBT_TR[CONTEXT=TransferListWidget]" width="24" height="24" /></a>
                 <a id="resumeButton" class="divider"><img class="mochaToolButton" title="QBT_TR(Resume)QBT_TR[CONTEXT=TransferListWidget]" src="images/torrent-start.svg" alt="QBT_TR(Resume)QBT_TR[CONTEXT=TransferListWidget]" width="24" height="24" /></a>
                 <a id="pauseButton"><img class="mochaToolButton" title="QBT_TR(Pause)QBT_TR[CONTEXT=TransferListWidget]" src="images/torrent-stop.svg" alt="QBT_TR(Pause)QBT_TR[CONTEXT=TransferListWidget]" width="24" height="24" /></a>
+                <a id="categoryButton" class="divider"><img class="mochaToolButton" title="QBT_TR(Category)QBT_TR[CONTEXT=TransferListWidget]" src="images/view-categories.svg" alt="QBT_TR(Category)QBT_TR[CONTEXT=TransferListWidget]" width="24" height="24" /></a>
+                <a id="tagsButton"><img class="mochaToolButton" title="QBT_TR(Tags)QBT_TR[CONTEXT=TransferListWidget]" src="images/tags.svg" alt="QBT_TR(Tags)QBT_TR[CONTEXT=TransferListWidget]" width="24" height="24" /></a>
+                <a id="autoTorrentManagementButton"><img id="autoTorrentManagementButtonIcon" class="mochaToolButton" title="QBT_TR(Automatic Torrent Management)QBT_TR[CONTEXT=TransferListWidget]" src="images/checked-completed.svg" alt="QBT_TR(Automatic Torrent Management)QBT_TR[CONTEXT=TransferListWidget]" width="24" height="24" /></a>
+                <a id="downloadLimitButton"><img class="mochaToolButton" title="QBT_TR(Limit download rate...)QBT_TR[CONTEXT=TransferListWidget]" src="images/download.svg" alt="QBT_TR(Limit download rate...)QBT_TR[CONTEXT=TransferListWidget]" width="24" height="24" /></a>
+                <a id="uploadLimitButton"><img class="mochaToolButton" title="QBT_TR(Limit upload rate...)QBT_TR[CONTEXT=TransferListWidget]" src="images/upload.svg" alt="QBT_TR(Limit upload rate...)QBT_TR[CONTEXT=TransferListWidget]" width="24" height="24" /></a>
+                <a id="forceRecheckButton"><img class="mochaToolButton" title="QBT_TR(Force recheck)QBT_TR[CONTEXT=TransferListWidget]" src="images/force-recheck.svg" alt="QBT_TR(Force recheck)QBT_TR[CONTEXT=TransferListWidget]" width="24" height="24" /></a>
+                <a id="forceReannounceButton"><img class="mochaToolButton" title="QBT_TR(Force reannounce)QBT_TR[CONTEXT=TransferListWidget]" src="images/reannounce.svg" alt="QBT_TR(Force reannounce)QBT_TR[CONTEXT=TransferListWidget]" width="24" height="24" /></a>
                 <span id="queueingButtons">
                     <a id="topPrioButton" class="divider"><img class="mochaToolButton" title="QBT_TR(Move to the top of the queue)QBT_TR[CONTEXT=MainWindow]" src="images/go-top.svg" alt="QBT_TR(Top of Queue)QBT_TR[CONTEXT=MainWindow]" width="24" height="24" /></a>
                     <a id="increasePrioButton"><img class="mochaToolButton" title="QBT_TR(Move up in the queue)QBT_TR[CONTEXT=MainWindow]" src="images/go-up.svg" alt="QBT_TR(Move Up Queue)QBT_TR[CONTEXT=MainWindow]" width="24" height="24" /></a>
@@ -186,6 +193,8 @@
             <a href="#exportTorrent"><img src="images/edit-copy.svg" alt="QBT_TR(Export .torrent)QBT_TR[CONTEXT=TransferListWidget]" /> QBT_TR(Export .torrent)QBT_TR[CONTEXT=TransferListWidget]</a>
         </li>
     </ul>
+    <ul id="toolbarCategoryMenu" class="contextMenu scrollableMenu toolbarMenu"></ul>
+    <ul id="toolbarTagMenu" class="contextMenu scrollableMenu toolbarMenu"></ul>
     <ul id="categoriesFilterMenu" class="contextMenu">
         <li><a href="#createCategory"><img src="images/list-add.svg" alt="QBT_TR(Add category...)QBT_TR[CONTEXT=CategoryFilterWidget]" /> QBT_TR(Add category...)QBT_TR[CONTEXT=CategoryFilterWidget]</a></li>
         <li><a href="#createSubcategory"><img src="images/list-add.svg" alt="QBT_TR(Add subcategory...)QBT_TR[CONTEXT=CategoryFilterWidget]" /> QBT_TR(Add subcategory...)QBT_TR[CONTEXT=CategoryFilterWidget]</a></li>

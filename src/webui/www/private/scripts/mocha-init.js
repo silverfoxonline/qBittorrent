@@ -91,6 +91,7 @@ let copyMagnetLinkFN = function() {};
 let copyIdFN = function() {};
 let setQueuePositionFN = function() {};
 let exportTorrentFN = function() {};
+let updateTorrentActionToolbar = function() {};
 
 const initializeWindows = function() {
     saveWindowSize = function(windowId) {
@@ -114,6 +115,94 @@ const initializeWindows = function() {
             }
         });
     }
+
+    const hideToolbarMenus = function() {
+        ['toolbarCategoryMenu', 'toolbarTagMenu'].each(function(menuId) {
+            if ($(menuId))
+                $(menuId).setStyle('display', 'none');
+        });
+    };
+
+    const showToolbarMenu = function(menuId, buttonId) {
+        const menu = $(menuId);
+        const button = $(buttonId);
+        if ((menu === null) || (button === null))
+            return;
+
+        if (window.qBittorrent.TransferList !== undefined)
+            window.qBittorrent.TransferList.contextMenu.updateMenuItems();
+
+        const buttonPosition = button.getPosition();
+        const buttonSize = button.getSize();
+        const maxHeight = document.documentElement.clientHeight * 0.75;
+        menu.setStyles({
+            display: 'block',
+            left: '-999em',
+            top: '-999em',
+            'max-height': maxHeight
+        });
+
+        let left = buttonPosition.x;
+        let top = buttonPosition.y + buttonSize.y;
+        if (left + menu.offsetWidth > document.documentElement.clientWidth)
+            left = document.documentElement.clientWidth - menu.offsetWidth;
+        if (top + menu.offsetHeight > document.documentElement.clientHeight)
+            top = buttonPosition.y - menu.offsetHeight;
+        if (left < 0)
+            left = 0;
+        if (top < 0)
+            top = 0;
+
+        menu.setStyles({
+            left: left,
+            top: top
+        });
+    };
+
+    const toggleToolbarMenu = function(e, menuId, buttonId) {
+        new Event(e).stop();
+        const menu = $(menuId);
+        const isShown = (menu !== null) && (menu.getStyle('display') !== 'none');
+        hideToolbarMenus();
+        if (!isShown)
+            showToolbarMenu(menuId, buttonId);
+    };
+
+    updateTorrentActionToolbar = function() {
+        const icon = $('autoTorrentManagementButtonIcon');
+        if (icon === null)
+            return;
+
+        const hashes = torrentsTable.selectedRowsIds();
+        if (hashes.length === 0) {
+            icon.setStyle('opacity', 0.25);
+            return;
+        }
+
+        let allAutoTmm = true;
+        let thereAreAutoTmm = false;
+        hashes.each(function(hash) {
+            const row = torrentsTable.rows.get(hash);
+            if ((row !== undefined) && (row.full_data.auto_tmm === true))
+                thereAreAutoTmm = true;
+            else
+                allAutoTmm = false;
+        });
+
+        icon.setStyle('opacity', allAutoTmm ? 1 : (thereAreAutoTmm ? 0.5 : 0.25));
+    };
+
+    ['toolbarCategoryMenu', 'toolbarTagMenu'].each(function(menuId) {
+        if ($(menuId)) {
+            $(menuId).addEvent('click', function(e) {
+                e.stopPropagation();
+                if (e.target.getParent('a') !== null)
+                    hideToolbarMenus();
+            });
+        }
+    });
+
+    document.body.addEvent('click', hideToolbarMenus);
 
     addClickEvent('download', function(e) {
         new Event(e).stop();
@@ -402,6 +491,39 @@ const initializeWindows = function() {
     addClickEvent('delete', function(e) {
         new Event(e).stop();
         deleteFN();
+    });
+
+    addClickEvent('category', function(e) {
+        toggleToolbarMenu(e, 'toolbarCategoryMenu', 'categoryButton');
+    });
+
+    addClickEvent('tags', function(e) {
+        toggleToolbarMenu(e, 'toolbarTagMenu', 'tagsButton');
+    });
+
+    addClickEvent('autoTorrentManagement', function(e) {
+        new Event(e).stop();
+        autoTorrentManagementFN();
+    });
+
+    addClickEvent('downloadLimit', function(e) {
+        new Event(e).stop();
+        downloadLimitFN();
+    });
+
+    addClickEvent('uploadLimit', function(e) {
+        new Event(e).stop();
+        uploadLimitFN();
+    });
+
+    addClickEvent('forceRecheck', function(e) {
+        new Event(e).stop();
+        recheckFN();
+    });
+
+    addClickEvent('forceReannounce', function(e) {
+        new Event(e).stop();
+        reannounceFN();
     });
 
     pauseFN = function() {

@@ -461,11 +461,11 @@ window.qBittorrent.DynamicTable = (function() {
         },
 
         updateTableHeaders: function() {
-            this.updateHeader(this.hiddenTableHeader);
-            this.updateHeader(this.fixedTableHeader);
+            this.updateHeader(this.hiddenTableHeader, false);
+            this.updateHeader(this.fixedTableHeader, true);
         },
 
-        updateHeader: function(header) {
+        updateHeader: function(header, renderControls) {
             const ths = header.getElements('th');
 
             for (let i = 0; i < ths.length; ++i) {
@@ -476,7 +476,7 @@ window.qBittorrent.DynamicTable = (function() {
                 th.setAttribute('style', 'width: ' + this.columns[i].width + 'px;' + this.columns[i].style);
                 th.columnName = this.columns[i].name;
                 th.addClass('column_' + th.columnName);
-                if (this.columns[i].updateTh !== null)
+                if (renderControls && (this.columns[i].updateTh !== null))
                     this.columns[i].updateTh(th);
                 if ((this.columns[i].visible == '0') || this.columns[i].force_hide)
                     th.addClass('invisible');

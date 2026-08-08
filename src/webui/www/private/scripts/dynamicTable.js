@@ -476,7 +476,7 @@ window.qBittorrent.DynamicTable = (function() {
                 th.setAttribute('style', 'width: ' + this.columns[i].width + 'px;' + this.columns[i].style);
                 th.columnName = this.columns[i].name;
                 th.addClass('column_' + th.columnName);
-                if (renderControls && (this.columns[i].updateTh !== null))
+                if (renderControls && (typeof this.columns[i].updateTh === 'function'))
                     this.columns[i].updateTh(th);
                 if ((this.columns[i].visible == '0') || this.columns[i].force_hide)
                     th.addClass('invisible');

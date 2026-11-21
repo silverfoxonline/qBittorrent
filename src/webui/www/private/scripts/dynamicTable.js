@@ -769,6 +769,10 @@ window.qBittorrent.DynamicTable = (function() {
                     });
                     tr.addEvent('click', function(e) {
                         e.stop();
+                        if (this._this.groupingEnabled && this._this.selectContentRow) {
+                            this._this.selectContentRow(this, e);
+                            return false;
+                        }
                         if (e.control || e.meta) {
                             // CTRL/CMD key was pressed
                             if (this._this.isRowSelected(this.rowId))
@@ -932,8 +936,27 @@ window.qBittorrent.DynamicTable = (function() {
 
         setup: function(dynamicTableDivId, dynamicTableFixedHeaderDivId, contextMenu) {
             this.groupingEnabled = (LocalPreferences.get('content_grouping', '1') === '1');
-            this.collapsedGroups = new Set();
+            $('mochaToolbar').setStyle('margin-top', '12px');
+            if (!$('toolbarVisibilityButton')) {
+                const toolbarButton = new Element('button', {
+                    id: 'toolbarVisibilityButton', type: 'button', text: '☰',
+                    title: '显示或隐藏顶部工具栏', 'aria-label': '显示或隐藏顶部工具栏'
+                });
+                toolbarButton.setStyles({ float: 'right', height: '19px', 'line-height': '16px', padding: '0 6px', cursor: 'pointer' });
+                toolbarButton.addEvent('click', function(e) {
+                    e.stop();
+                    $('showTopToolbarLink').click();
+                });
+                toolbarButton.inject($('desktopNavbar').getElement('ul'), 'before');
+            }
+            try {
+                this.collapsedGroups = new Set(JSON.parse(localStorage.getItem('qb-content-collapsed') || '[]'));
+            }
+            catch (e) {
+                this.collapsedGroups = new Set();
+            }
             this.parent(dynamicTableDivId, dynamicTableFixedHeaderDivId, contextMenu);
+            MochaUI.Desktop.setDesktopSize();
             if (this.sortedColumn === 'select')
                 this.setSortedColumn('name');
             const button = new Element('a', { 'class': 'divider', role: 'button', tabindex: '0' });
@@ -947,19 +970,114 @@ window.qBittorrent.DynamicTable = (function() {
                 button.style.opacity = this.groupingEnabled ? '1' : '0.5';
             }.bind(this);
             updateGroupingButton();
-            button.addEvent('click', function() {
+            const menu = new Element('div').setStyles({ position: 'absolute', display: 'none', 'z-index': 10000, background: 'white', border: '1px solid #888', padding: '4px' });
+            document.body.adopt(menu);
+            const addMenuItem = function(text, action) {
+                const item = new Element('button', { type: 'button', text: text });
+                item.setStyles({ display: 'block', width: '100%', 'text-align': 'left' });
+                item.addEvent('click', function(e) { e.stop(); menu.setStyle('display', 'none'); action(); });
+                menu.adopt(item);
+                return item;
+            };
+            const enabledItem = addMenuItem('', function() {
                 this.groupingEnabled = !this.groupingEnabled;
                 LocalPreferences.set('content_grouping', this.groupingEnabled ? '1' : '0');
                 updateGroupingButton();
                 this.updateTable(true);
             }.bind(this));
+            addMenuItem('选择父行', function() {
+                this.tableBody.getElements('tr.contentGroupHeader').each(function(header) {
+                    if (header.groupMembers.some(id => this.selectedRows.contains(id)))
+                        header.groupMembers.forEach(id => { if (!this.selectedRows.contains(id)) this.selectedRows.push(id); });
+                }.bind(this));
+                this.setRowClass(); this.updateSelectHeaderCheckbox(); this.onSelectedRowChanged();
+            }.bind(this));
+            addMenuItem('展开所有分组', function() {
+                this.collapsedGroups.clear(); this.saveCollapsedGroups(); this.updateTable(true);
+            }.bind(this));
+            addMenuItem('折叠所有分组', function() {
+                this.tableBody.getElements('tr.contentGroupHeader').each(header => this.collapsedGroups.add(header.groupKey));
+                this.saveCollapsedGroups(); this.updateTable(true);
+            }.bind(this));
+            const groupContextItems = [];
+            const addGroupContextItem = function(text, action) {
+                const li = new Element('li');
+                const link = new Element('a', { href: '#', text: text });
+                link.addEvent('click', function(e) {
+                    e.stop();
+                    this.contextMenu.hide();
+                    action(this.contextMenu.options.element);
+                }.bind(this));
+                li.adopt(link);
+                this.contextMenu.menu.adopt(li);
+                groupContextItems.push(li);
+            }.bind(this);
+            addGroupContextItem('展开/折叠此分组', function(header) {
+                if (this.collapsedGroups.has(header.groupKey)) this.collapsedGroups.delete(header.groupKey);
+                else this.collapsedGroups.add(header.groupKey);
+                this.saveCollapsedGroups(); this.updateTable(true);
+            }.bind(this));
+            addGroupContextItem('展开所有分组', function() {
+                this.collapsedGroups.clear(); this.saveCollapsedGroups(); this.updateTable(true);
+            }.bind(this));
+            addGroupContextItem('折叠所有分组', function() {
+                this.tableBody.getElements('tr.contentGroupHeader').each(header => this.collapsedGroups.add(header.groupKey));
+                this.saveCollapsedGroups(); this.updateTable(true);
+            }.bind(this));
+            this.contextMenu.addEvent('show', function() {
+                const element = this.contextMenu.options.element;
+                groupContextItems.forEach(item => item.setStyle('display', element && element.hasClass('contentGroupHeader') ? '' : 'none'));
+            }.bind(this));
+            button.addEvent('click', function(e) {
+                e.stop();
+                enabledItem.set('text', (this.groupingEnabled ? '✓ ' : '　') + '启用内容分组视图');
+                const position = button.getCoordinates();
+                menu.setStyles({ left: position.left, top: position.bottom, display: menu.getStyle('display') === 'none' ? 'block' : 'none' });
+            }.bind(this));
+            document.addEvent('click', function() { menu.setStyle('display', 'none'); });
             button.addEvent('keydown', function(e) {
                 if ((e.key === 'enter') || (e.key === 'space')) {
                     e.stop();
-                    button.fireEvent('click');
+                    button.click();
                 }
             });
             button.inject($('preferencesButton'), 'before');
+        },
+
+        saveCollapsedGroups: function() {
+            localStorage.setItem('qb-content-collapsed', JSON.stringify(Array.from(this.collapsedGroups)));
+        },
+
+        selectContentRow: function(target, event) {
+            const visible = this.tableBody.getElements('tr').filter(tr => tr.getStyle('display') !== 'none');
+            const token = tr => tr.groupMembers ? 'group:' + tr.groupKey : 'row:' + tr.rowId;
+            const ids = target.groupMembers || [target.rowId];
+            const start = visible.findIndex(tr => token(tr) === this.groupSelectionAnchor);
+            const end = visible.indexOf(target);
+            if (event.shift && start !== -1 && end !== -1) {
+                if (!event.control && !event.meta) this.selectedRows.empty();
+                visible.slice(Math.min(start, end), Math.max(start, end) + 1).forEach(function(tr) {
+                    (tr.groupMembers || [tr.rowId]).forEach(id => {
+                        if (!this.selectedRows.contains(id)) this.selectedRows.push(id);
+                    });
+                }.bind(this));
+            }
+            else if (event.control || event.meta) {
+                const remove = ids.every(id => this.selectedRows.contains(id));
+                ids.forEach(id => { if (remove) this.selectedRows.erase(id); else if (!this.selectedRows.contains(id)) this.selectedRows.push(id); });
+            }
+            else this.selectedRows = ids.slice();
+            if (!event.shift) this.groupSelectionAnchor = token(target);
+            this.setRowClass(); this.updateSelectHeaderCheckbox(); this.onSelectedRowChanged();
+        },
+
+        setRowClass: function() {
+            this.parent();
+            this.tableBody.getElements('tr.contentGroupHeader').each(function(header) {
+                const selected = header.groupMembers.every(id => this.selectedRows.contains(id));
+                if (selected) header.addClass('selected');
+                else header.removeClass('selected');
+            }.bind(this));
         },
 
         setSortedColumn: function(column) {
@@ -989,27 +1107,49 @@ window.qBittorrent.DynamicTable = (function() {
                 const first = this.getTrByRowId(members[0].rowId);
                 if (!first) return;
                 const header = new Element('tr', { 'class': 'contentGroupHeader' });
+                header.groupKey = key;
+                header.groupMembers = members.map(member => member.rowId);
                 const cell = new Element('td', { colspan: this.columns.length });
-                const toggle = new Element('button', { type: 'button' });
+                const toggle = new Element('div');
+                const icon = new Element('button', { type: 'button' });
+                const label = new Element('span');
+                cell.setStyle('padding', '0');
+                toggle.setStyles({ width: '100%', 'box-sizing': 'border-box', display: 'flex', 'align-items': 'center', 'text-align': 'left', border: '1px solid black', padding: '1px 4px', cursor: 'pointer' });
+                icon.setStyles({ display: 'inline-block', width: '14px', height: '14px', padding: '0', 'line-height': '12px', 'text-align': 'center', border: '1px solid black', 'border-radius': '2px', 'margin-right': '8px', 'flex-shrink': '0', cursor: 'pointer' });
+                label.set('text', members[0].full_data.name + ' (' + members.length + ')');
+                toggle.adopt(icon, label);
                 const render = function() {
                     const collapsed = this.collapsedGroups.has(key);
-                    toggle.set('text', (collapsed ? '▸ ' : '▾ ') + members[0].full_data.name + ' (' + members.length + ')');
+                    icon.set('text', collapsed ? '+' : '−');
+                    icon.setProperty('aria-expanded', collapsed ? 'false' : 'true');
+                    icon.setProperty('aria-label', collapsed ? '展开分组' : '折叠分组');
                     members.forEach(function(member) {
                         const tr = this.getTrByRowId(member.rowId);
                         if (tr) tr.style.display = collapsed ? 'none' : '';
                     }.bind(this));
                 }.bind(this);
-                toggle.addEvent('click', function(e) {
+                icon.addEvent('click', function(e) {
                     e.stop();
                     if (this.collapsedGroups.has(key)) this.collapsedGroups.delete(key);
                     else {
                         this.collapsedGroups.add(key);
-                        members.forEach(function(member) { this.selectedRows.erase(member.rowId); }.bind(this));
                     }
+                    this.saveCollapsedGroups();
                     render();
                     this.setRowClass();
                     this.updateSelectHeaderCheckbox();
                     this.onSelectedRowChanged();
+                }.bind(this));
+                toggle.addEvent('click', function(e) {
+                    e.stop();
+                    this.selectContentRow(header, e);
+                }.bind(this));
+                header.addEvent('contextmenu', function(e) {
+                    if (!header.groupMembers.every(id => this.selectedRows.contains(id))) {
+                        this.selectedRows = header.groupMembers.slice();
+                        this.setRowClass(); this.updateSelectHeaderCheckbox(); this.onSelectedRowChanged();
+                    }
+                    this.contextMenu.triggerMenu(e, header);
                 }.bind(this));
                 cell.adopt(toggle);
                 header.adopt(cell);
@@ -1021,6 +1161,7 @@ window.qBittorrent.DynamicTable = (function() {
                 }.bind(this));
                 render();
             }.bind(this));
+            this.setRowClass();
             this.updateSelectHeaderCheckbox();
         },
 
@@ -1340,7 +1481,7 @@ window.qBittorrent.DynamicTable = (function() {
 
             this.columns['progress'].onResize = function(columnName) {
                 const pos = this.getColumnPos(columnName);
-                const trs = this.tableBody.getElements('tr');
+                const trs = this.tableBody.getElements('tr[data-row-id]');
                 ProgressColumnWidth = -1;
                 for (let i = 0; i < trs.length; ++i) {
                     const td = trs[i].getElements('td')[pos];
@@ -1692,7 +1833,7 @@ window.qBittorrent.DynamicTable = (function() {
             if (visibleRows.length === 0)
                 return;
 
-            if (this.selectedRows.length === visibleRows.length) {
+            if (visibleRows.every(tr => this.isRowSelected(tr.rowId))) {
                 this.deselectAll();
                 this.onSelectedRowChanged();
             }
@@ -1703,7 +1844,7 @@ window.qBittorrent.DynamicTable = (function() {
 
         updateSelectHeaderCheckbox: function() {
             const visibleRows = this.tableBody ? this.tableBody.getElements('tr[data-row-id]').filter(tr => tr.getStyle('display') !== 'none') : [];
-            const selectedCount = this.selectedRows.length;
+            const selectedCount = visibleRows.filter(tr => this.isRowSelected(tr.rowId)).length;
             $$('input.torrentSelectionHeaderCheckbox').each(function(checkbox) {
                 checkbox.checked = (visibleRows.length > 0) && (selectedCount === visibleRows.length);
                 checkbox.indeterminate = (selectedCount > 0) && (selectedCount < visibleRows.length);

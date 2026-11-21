@@ -960,8 +960,7 @@ window.qBittorrent.DynamicTable = (function() {
             if (this.sortedColumn === 'select')
                 this.setSortedColumn('name');
             const button = new Element('a', { 'class': 'divider', role: 'button', tabindex: '0' });
-            const icon = new Element('span', { text: '▦', 'class': 'mochaToolButton' });
-            icon.setStyles({ display: 'inline-block', width: '24px', height: '24px', 'font-size': '24px', 'text-align': 'center' });
+            const icon = new Element('img', { 'class': 'mochaToolButton', width: 24, height: 24, alt: '', src: 'images/content-group.svg' });
             button.adopt(icon);
             const updateGroupingButton = function() {
                 button.setProperty('aria-pressed', this.groupingEnabled ? 'true' : 'false');

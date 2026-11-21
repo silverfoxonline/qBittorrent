@@ -945,18 +945,6 @@ window.qBittorrent.DynamicTable = (function() {
                 }).inject(document.head);
             }
             $('mochaToolbar').setStyle('margin-top', '12px');
-            if (!$('toolbarVisibilityButton')) {
-                const toolbarButton = new Element('button', {
-                    id: 'toolbarVisibilityButton', type: 'button', text: '☰',
-                    title: '显示或隐藏顶部工具栏', 'aria-label': '显示或隐藏顶部工具栏'
-                });
-                toolbarButton.setStyles({ float: 'right', height: '19px', 'line-height': '16px', padding: '0 6px', cursor: 'pointer' });
-                toolbarButton.addEvent('click', function(e) {
-                    e.stop();
-                    $('showTopToolbarLink').click();
-                });
-                toolbarButton.inject($('desktopNavbar').getElement('ul'), 'before');
-            }
             try {
                 this.collapsedGroups = new Set(JSON.parse(localStorage.getItem('qb-content-collapsed') || '[]'));
             }
@@ -1126,13 +1114,8 @@ window.qBittorrent.DynamicTable = (function() {
                 const header = new Element('tr', { 'class': 'contentGroupHeader' });
                 header.groupKey = key;
                 header.groupMembers = members.map(member => member.rowId);
-                const toggle = new Element('div');
                 const icon = new Element('button', { type: 'button' });
-                const label = new Element('span');
-                toggle.setStyles({ display: 'flex', 'align-items': 'center', cursor: 'pointer', 'min-width': '0' });
-                icon.setStyles({ display: 'inline-block', width: '14px', height: '14px', padding: '0', 'line-height': '12px', 'text-align': 'center', border: '1px solid black', 'border-radius': '2px', 'margin-right': '8px', 'flex-shrink': '0', cursor: 'pointer' });
-                label.set('text', members[0].full_data.name + ' (' + members.length + ')');
-                toggle.adopt(icon, label);
+                icon.setStyles({ display: 'inline-block', width: '14px', height: '14px', padding: '0', 'line-height': '12px', 'text-align': 'center', border: '1px solid black', 'border-radius': '2px', cursor: 'pointer' });
                 const render = function() {
                     const collapsed = this.collapsedGroups.has(key);
                     icon.set('text', collapsed ? '+' : '−');
@@ -1188,10 +1171,19 @@ window.qBittorrent.DynamicTable = (function() {
                     summary.eta = etas.length ? Math.max(...etas) : window.qBittorrent.Misc.MAX_ETA;
                 else delete summary.eta;
                 const summaryColumns = new Set(['size', 'total_size', 'progress', 'status', 'dlspeed', 'upspeed', 'eta', 'added_on', 'save_path', 'amount_left', 'completed', 'time_active', 'last_activity']);
+                const selectColumn = this.columns['select'];
+                const iconColumn = ((selectColumn.visible !== '0') && !selectColumn.force_hide) ? 'select' : 'name';
                 this.columns.forEach(function(column) {
                     const cell = new Element('td');
                     if ((column.visible === '0') || column.force_hide) cell.addClass('invisible');
-                    if (column.name === 'name') cell.adopt(toggle);
+                    if (column.name === 'name') {
+                        if (iconColumn === 'name') cell.adopt(icon);
+                        cell.appendText(members[0].full_data.name + ' (' + members.length + ')');
+                    }
+                    else if (column.name === iconColumn) {
+                        cell.setStyle('text-align', 'center');
+                        cell.adopt(icon);
+                    }
                     else if (summaryColumns.has(column.name)) {
                         if (column.name === 'status') {
                             const states = new Map();

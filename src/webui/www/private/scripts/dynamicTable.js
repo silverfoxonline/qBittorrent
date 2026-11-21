@@ -938,6 +938,7 @@ window.qBittorrent.DynamicTable = (function() {
             this.groupingEnabled = (LocalPreferences.get('content_grouping', '1') === '1');
             if (!$('contentGroupingStyles')) {
                 new Element('style', { id: 'contentGroupingStyles', text:
+                    '#torrentsTableDiv tr.contentGroupHeader{outline:1px solid black;outline-offset:-1px}' +
                     '#torrentsTableDiv tr.contentGroupHeader:not(.selected):not(:hover){background-color:#ddd}' +
                     '#torrentsTableDiv tr.contentGroupChildOdd:not(.selected):not(:hover){background-color:#fff}' +
                     '#torrentsTableDiv tr.contentGroupChildEven:not(.selected):not(:hover){background-color:#eee}'
@@ -1092,6 +1093,12 @@ window.qBittorrent.DynamicTable = (function() {
                 this.parent(column);
         },
 
+        updateColumn: function(columnName) {
+            this.parent(columnName);
+            if (this.groupingEnabled && this.tableBody.getElement('tr.contentGroupHeader'))
+                this.updateTable(true);
+        },
+
         updateTable: function(fullUpdate = false) {
             this.tableBody.getElements('tr.contentGroupHeader').each(function(header) { header.destroy(); });
             this.tableBody.getElements('tr[data-row-id]').each(function(tr) {
@@ -1119,12 +1126,10 @@ window.qBittorrent.DynamicTable = (function() {
                 const header = new Element('tr', { 'class': 'contentGroupHeader' });
                 header.groupKey = key;
                 header.groupMembers = members.map(member => member.rowId);
-                const cell = new Element('td', { colspan: this.columns.length });
                 const toggle = new Element('div');
                 const icon = new Element('button', { type: 'button' });
                 const label = new Element('span');
-                cell.setStyle('padding', '0');
-                toggle.setStyles({ width: '100%', 'box-sizing': 'border-box', display: 'flex', 'align-items': 'center', 'text-align': 'left', border: '1px solid black', padding: '1px 4px', cursor: 'pointer' });
+                toggle.setStyles({ display: 'flex', 'align-items': 'center', cursor: 'pointer', 'min-width': '0' });
                 icon.setStyles({ display: 'inline-block', width: '14px', height: '14px', padding: '0', 'line-height': '12px', 'text-align': 'center', border: '1px solid black', 'border-radius': '2px', 'margin-right': '8px', 'flex-shrink': '0', cursor: 'pointer' });
                 label.set('text', members[0].full_data.name + ' (' + members.length + ')');
                 toggle.adopt(icon, label);
@@ -1150,7 +1155,7 @@ window.qBittorrent.DynamicTable = (function() {
                     this.updateSelectHeaderCheckbox();
                     this.onSelectedRowChanged();
                 }.bind(this));
-                toggle.addEvent('click', function(e) {
+                header.addEvent('click', function(e) {
                     e.stop();
                     this.selectContentRow(header, e);
                 }.bind(this));
@@ -1161,9 +1166,53 @@ window.qBittorrent.DynamicTable = (function() {
                     }
                     this.contextMenu.triggerMenu(e, header);
                 }.bind(this));
-                cell.adopt(toggle);
-                header.adopt(cell);
+                const data = members.map(member => member.full_data);
+                const summary = Object.assign({}, data[0]);
+                const numeric = (field) => data.map(item => item[field]).filter(value => typeof value === 'number' && Number.isFinite(value));
+                ['dlspeed', 'upspeed', 'amount_left', 'time_active', 'seeding_time', 'last_activity'].forEach(function(field) {
+                    const values = numeric(field);
+                    if (values.length === data.length) summary[field] = Math.max(...values);
+                    else delete summary[field];
+                });
+                const added = numeric('added_on');
+                if (added.length === data.length) summary.added_on = Math.min(...added);
+                else delete summary.added_on;
+                const completed = numeric('completed');
+                if (completed.length === data.length) summary.completed = Math.min(...completed);
+                else delete summary.completed;
+                const progress = numeric('progress');
+                if (progress.length === data.length) summary.progress = progress.reduce((sum, value) => sum + value, 0) / progress.length;
+                const incomplete = data.filter(item => item.amount_left > 0);
+                const etas = incomplete.map(item => item.eta).filter(value => typeof value === 'number' && Number.isFinite(value));
+                if (etas.length === incomplete.length)
+                    summary.eta = etas.length ? Math.max(...etas) : window.qBittorrent.Misc.MAX_ETA;
+                else delete summary.eta;
+                const summaryColumns = new Set(['size', 'total_size', 'progress', 'status', 'dlspeed', 'upspeed', 'eta', 'added_on', 'save_path', 'amount_left', 'completed', 'time_active', 'last_activity']);
+                this.columns.forEach(function(column) {
+                    const cell = new Element('td');
+                    if ((column.visible === '0') || column.force_hide) cell.addClass('invisible');
+                    if (column.name === 'name') cell.adopt(toggle);
+                    else if (summaryColumns.has(column.name)) {
+                        if (column.name === 'status') {
+                            const states = new Map();
+                            data.forEach(item => states.set(item.status, (states.get(item.status) || 0) + 1));
+                            const labels = [];
+                            states.forEach(function(count, state) {
+                                const temporary = new Element('td');
+                                column.updateTd(temporary, { full_data: { status: state } });
+                                labels.push(temporary.get('text') + (states.size > 1 ? ' ' + count : ''));
+                            });
+                            cell.set('text', labels.join(' · '));
+                        }
+                        else if (column.name !== 'progress' && column.dataProperties.every(field => summary[field] !== undefined))
+                            column.updateTd(cell, { full_data: summary });
+                    }
+                    header.adopt(cell);
+                });
                 header.inject(first, 'before');
+                const progressColumn = this.columns['progress'];
+                if ((progress.length === data.length) && (progressColumn.visible !== '0') && !progressColumn.force_hide)
+                    progressColumn.updateTd(header.getElements('td')[this.getColumnPos('progress')], { full_data: summary });
                 let previous = header;
                 members.forEach(function(member, index) {
                     const tr = this.getTrByRowId(member.rowId);

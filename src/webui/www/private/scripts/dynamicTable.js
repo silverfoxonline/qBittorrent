@@ -936,6 +936,13 @@ window.qBittorrent.DynamicTable = (function() {
 
         setup: function(dynamicTableDivId, dynamicTableFixedHeaderDivId, contextMenu) {
             this.groupingEnabled = (LocalPreferences.get('content_grouping', '1') === '1');
+            if (!$('contentGroupingStyles')) {
+                new Element('style', { id: 'contentGroupingStyles', text:
+                    '#torrentsTableDiv tr.contentGroupHeader:not(.selected):not(:hover){background-color:#ddd}' +
+                    '#torrentsTableDiv tr.contentGroupChildOdd:not(.selected):not(:hover){background-color:#fff}' +
+                    '#torrentsTableDiv tr.contentGroupChildEven:not(.selected):not(:hover){background-color:#eee}'
+                }).inject(document.head);
+            }
             $('mochaToolbar').setStyle('margin-top', '12px');
             if (!$('toolbarVisibilityButton')) {
                 const toolbarButton = new Element('button', {
@@ -1087,7 +1094,10 @@ window.qBittorrent.DynamicTable = (function() {
 
         updateTable: function(fullUpdate = false) {
             this.tableBody.getElements('tr.contentGroupHeader').each(function(header) { header.destroy(); });
-            this.tableBody.getElements('tr[data-row-id]').each(function(tr) { tr.style.display = ''; });
+            this.tableBody.getElements('tr[data-row-id]').each(function(tr) {
+                tr.style.display = '';
+                tr.removeClass('contentGroupChildOdd').removeClass('contentGroupChildEven');
+            });
             this.parent(fullUpdate);
             if (!this.groupingEnabled)
                 return;
@@ -1155,9 +1165,13 @@ window.qBittorrent.DynamicTable = (function() {
                 header.adopt(cell);
                 header.inject(first, 'before');
                 let previous = header;
-                members.forEach(function(member) {
+                members.forEach(function(member, index) {
                     const tr = this.getTrByRowId(member.rowId);
-                    if (tr) { tr.inject(previous, 'after'); previous = tr; }
+                    if (tr) {
+                        tr.addClass(index % 2 ? 'contentGroupChildEven' : 'contentGroupChildOdd');
+                        tr.inject(previous, 'after');
+                        previous = tr;
+                    }
                 }.bind(this));
                 render();
             }.bind(this));

@@ -1049,7 +1049,8 @@ window.qBittorrent.DynamicTable = (function() {
         },
 
         selectContentRow: function(target, event) {
-            const visible = this.tableBody.getElements('tr').filter(tr => tr.getStyle('display') !== 'none');
+            const visible = Array.prototype.slice.call(this.tableBody.getElements('tr'))
+                .filter(tr => tr.getStyle('display') !== 'none');
             const token = tr => tr.groupMembers ? 'group:' + tr.groupKey : 'row:' + tr.rowId;
             const ids = target.groupMembers || [target.rowId];
             const start = visible.findIndex(tr => token(tr) === this.groupSelectionAnchor);
@@ -1829,7 +1830,8 @@ window.qBittorrent.DynamicTable = (function() {
         },
 
         toggleVisibleRowsSelection: function() {
-            const visibleRows = this.tableBody.getElements('tr[data-row-id]').filter(tr => tr.getStyle('display') !== 'none');
+            const visibleRows = Array.prototype.slice.call(this.tableBody.getElements('tr[data-row-id]'))
+                .filter(tr => tr.getStyle('display') !== 'none');
             if (visibleRows.length === 0)
                 return;
 

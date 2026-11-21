@@ -1087,6 +1087,37 @@ window.qBittorrent.DynamicTable = (function() {
                 this.updateTable(true);
         },
 
+        getContentGroupKey: function(row) {
+            const data = row.full_data;
+            if ((typeof data.save_path !== 'string') || (typeof data.name !== 'string')
+                || (typeof data.total_size !== 'number')) return null;
+            return JSON.stringify([data.save_path.replace(/\/+$/, ''), data.name, data.total_size]);
+        },
+
+        groupSortedRows: function(rows) {
+            const groups = new Map();
+            rows.forEach(function(row) {
+                const key = this.getContentGroupKey(row);
+                if (key === null) return;
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key).push(row);
+            }.bind(this));
+            const ordered = [];
+            const emitted = new Set();
+            rows.forEach(function(row) {
+                const key = this.getContentGroupKey(row);
+                const members = key === null ? null : groups.get(key);
+                if (members && members.length > 1) {
+                    if (emitted.has(key)) return;
+                    emitted.add(key);
+                    members.forEach(member => ordered.push(member));
+                }
+                else ordered.push(row);
+            }.bind(this));
+            ordered.forEach(row => { ordered[row.rowId] = row; });
+            return ordered;
+        },
+
         updateTable: function(fullUpdate = false) {
             this.tableBody.getElements('tr.contentGroupHeader').each(function(header) { header.destroy(); });
             this.tableBody.getElements('tr[data-row-id]').each(function(tr) {
@@ -1100,13 +1131,11 @@ window.qBittorrent.DynamicTable = (function() {
             const groups = new Map();
             const rows = this.getFilteredAndSortedRows();
             rows.forEach(function(row) {
-                const data = row.full_data;
-                if ((typeof data.save_path !== 'string') || (typeof data.name !== 'string')
-                    || (typeof data.total_size !== 'number')) return;
-                const key = JSON.stringify([data.save_path.replace(/\/+$/, ''), data.name, data.total_size]);
+                const key = this.getContentGroupKey(row);
+                if (key === null) return;
                 if (!groups.has(key)) groups.set(key, []);
                 groups.get(key).push(row);
-            });
+            }.bind(this));
             groups.forEach(function(members, key) {
                 if (members.length < 2) return;
                 const first = this.getTrByRowId(members[0].rowId);
@@ -1210,7 +1239,8 @@ window.qBittorrent.DynamicTable = (function() {
                     const tr = this.getTrByRowId(member.rowId);
                     if (tr) {
                         tr.addClass(index % 2 ? 'contentGroupChildEven' : 'contentGroupChildOdd');
-                        tr.inject(previous, 'after');
+                        if (previous.nextSibling !== tr)
+                            tr.inject(previous, 'after');
                         previous = tr;
                     }
                 }.bind(this));
@@ -1860,7 +1890,7 @@ window.qBittorrent.DynamicTable = (function() {
                 else
                     return -res;
             }.bind(this));
-            return filteredRows;
+            return this.groupingEnabled ? this.groupSortedRows(filteredRows) : filteredRows;
         },
 
         setupTr: function(tr) {

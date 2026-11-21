@@ -931,16 +931,22 @@ window.qBittorrent.DynamicTable = (function() {
         Extends: DynamicTable,
 
         setup: function(dynamicTableDivId, dynamicTableFixedHeaderDivId, contextMenu) {
-            this.groupingEnabled = (LocalPreferences.get('content_grouping', '0') === '1');
+            this.groupingEnabled = (LocalPreferences.get('content_grouping', '1') === '1');
             this.collapsedGroups = new Set();
             this.parent(dynamicTableDivId, dynamicTableFixedHeaderDivId, contextMenu);
             if (this.sortedColumn === 'select')
                 this.setSortedColumn('name');
             const button = new Element('button', { type: 'button', text: '内容归类' });
             button.setProperty('title', '切换内容归类视图');
+            const updateGroupingButton = function() {
+                button.setProperty('aria-pressed', this.groupingEnabled ? 'true' : 'false');
+                button.set('text', this.groupingEnabled ? '内容归类：开' : '内容归类：关');
+            }.bind(this);
+            updateGroupingButton();
             button.addEvent('click', function() {
                 this.groupingEnabled = !this.groupingEnabled;
                 LocalPreferences.set('content_grouping', this.groupingEnabled ? '1' : '0');
+                updateGroupingButton();
                 this.updateTable(true);
             }.bind(this));
             $('torrentsFilterInput').getParent().adopt(button);

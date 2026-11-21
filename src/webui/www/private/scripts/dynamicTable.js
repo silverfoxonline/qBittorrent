@@ -497,7 +497,7 @@ window.qBittorrent.DynamicTable = (function() {
             const visible = ((this.columns[pos].visible != '0') && !this.columns[pos].force_hide);
             const ths = this.hiddenTableHeader.getElements('th');
             const fths = this.fixedTableHeader.getElements('th');
-            const trs = this.tableBody.getElements('tr');
+            const trs = this.tableBody.getElements('tr[data-row-id]');
             const style = 'width: ' + this.columns[pos].width + 'px;' + this.columns[pos].style;
 
             ths[pos].setAttribute('style', style);
@@ -934,6 +934,8 @@ window.qBittorrent.DynamicTable = (function() {
             this.groupingEnabled = (LocalPreferences.get('content_grouping', '0') === '1');
             this.collapsedGroups = new Set();
             this.parent(dynamicTableDivId, dynamicTableFixedHeaderDivId, contextMenu);
+            if (this.sortedColumn === 'select')
+                this.setSortedColumn('name');
             const button = new Element('button', { type: 'button', text: '内容归类' });
             button.setProperty('title', '切换内容归类视图');
             button.addEvent('click', function() {
@@ -942,6 +944,11 @@ window.qBittorrent.DynamicTable = (function() {
                 this.updateTable(true);
             }.bind(this));
             $('torrentsFilterInput').getParent().adopt(button);
+        },
+
+        setSortedColumn: function(column) {
+            if (column !== 'select')
+                this.parent(column);
         },
 
         updateTable: function(fullUpdate = false) {

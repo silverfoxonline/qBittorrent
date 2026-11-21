@@ -936,11 +936,15 @@ window.qBittorrent.DynamicTable = (function() {
             this.parent(dynamicTableDivId, dynamicTableFixedHeaderDivId, contextMenu);
             if (this.sortedColumn === 'select')
                 this.setSortedColumn('name');
-            const button = new Element('button', { type: 'button', text: '内容归类' });
-            button.setProperty('title', '切换内容归类视图');
+            const button = new Element('a', { 'class': 'divider', role: 'button', tabindex: '0' });
+            const icon = new Element('span', { text: '▦', 'class': 'mochaToolButton' });
+            icon.setStyles({ display: 'inline-block', width: '24px', height: '24px', 'font-size': '24px', 'text-align': 'center' });
+            button.adopt(icon);
             const updateGroupingButton = function() {
                 button.setProperty('aria-pressed', this.groupingEnabled ? 'true' : 'false');
-                button.set('text', this.groupingEnabled ? '内容归类：开' : '内容归类：关');
+                button.setProperty('title', this.groupingEnabled ? '内容归类：开' : '内容归类：关');
+                button.setProperty('aria-label', this.groupingEnabled ? '内容归类：开' : '内容归类：关');
+                button.style.opacity = this.groupingEnabled ? '1' : '0.5';
             }.bind(this);
             updateGroupingButton();
             button.addEvent('click', function() {
@@ -949,7 +953,13 @@ window.qBittorrent.DynamicTable = (function() {
                 updateGroupingButton();
                 this.updateTable(true);
             }.bind(this));
-            $('torrentsFilterInput').getParent().adopt(button);
+            button.addEvent('keydown', function(e) {
+                if ((e.key === 'enter') || (e.key === 'space')) {
+                    e.stop();
+                    button.fireEvent('click');
+                }
+            });
+            button.inject($('preferencesButton'), 'before');
         },
 
         setSortedColumn: function(column) {

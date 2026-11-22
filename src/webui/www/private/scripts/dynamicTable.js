@@ -1041,7 +1041,7 @@ window.qBittorrent.DynamicTable = (function() {
         },
 
         saveCollapsedGroups: function() {
-            localStorage.setItem('qb-content-collapsed', JSON.stringify(Array.from(this.collapsedGroups)));
+            localStorage.setItem('qb-content-collapsed', JSON.stringify([...this.collapsedGroups]));
         },
 
         selectContentRow: function(target, event) {

@@ -941,7 +941,8 @@ window.qBittorrent.DynamicTable = (function() {
                     '#torrentsTableDiv tr.contentGroupHeader{outline:1px solid black;outline-offset:-1px}' +
                     '#torrentsTableDiv tr.contentGroupHeader:not(.selected):not(:hover){background-color:#ddd}' +
                     '#torrentsTableDiv tr.contentGroupChildOdd:not(.selected):not(:hover){background-color:#fff}' +
-                    '#torrentsTableDiv tr.contentGroupChildEven:not(.selected):not(:hover){background-color:#eee}'
+                    '#torrentsTableDiv tr.contentGroupChildEven:not(.selected):not(:hover){background-color:#eee}' +
+                    '#torrentsTableDiv td.contentGroupChildName{padding-left:20px}'
                 }).inject(document.head);
             }
             $('mochaToolbar').setStyle('margin-top', '12px');
@@ -1123,6 +1124,7 @@ window.qBittorrent.DynamicTable = (function() {
             this.tableBody.getElements('tr[data-row-id]').each(function(tr) {
                 tr.style.display = '';
                 tr.removeClass('contentGroupChildOdd').removeClass('contentGroupChildEven');
+                tr.getElements('td.contentGroupChildName').removeClass('contentGroupChildName');
             });
             this.parent(fullUpdate);
             if (!this.groupingEnabled)
@@ -1239,6 +1241,7 @@ window.qBittorrent.DynamicTable = (function() {
                     const tr = this.getTrByRowId(member.rowId);
                     if (tr) {
                         tr.addClass(index % 2 ? 'contentGroupChildEven' : 'contentGroupChildOdd');
+                        tr.getElements('td')[this.getColumnPos('name')].addClass('contentGroupChildName');
                         if (previous.nextSibling !== tr)
                             tr.inject(previous, 'after');
                         previous = tr;

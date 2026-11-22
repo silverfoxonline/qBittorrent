@@ -1305,9 +1305,8 @@ window.qBittorrent.DynamicTable = (function() {
                     });
                     checkbox.addEvents({
                         click: function(e) {
-                            e.stop();
+                            e.stopPropagation();
                             this._table.toggleVisibleRowsSelection();
-                            return false;
                         },
                         mousedown: function(e) {
                             e.stop();
@@ -1916,13 +1915,21 @@ window.qBittorrent.DynamicTable = (function() {
             return this.getSelectedRowId();
         },
 
-        toggleVisibleRowsSelection: function() {
-            const visibleRows = Array.prototype.slice.call(this.tableBody.getElements('tr[data-row-id]'))
-                .filter(tr => tr.getStyle('display') !== 'none');
-            if (visibleRows.length === 0)
-                return;
+        selectAll: function() {
+            this.selectedRows = this.getFilteredAndSortedRows().map(row => row.rowId);
+            this.setRowClass();
+            this.updateSelectHeaderCheckbox();
+            this.onSelectedRowChanged();
+        },
 
-            if (visibleRows.every(tr => this.isRowSelected(tr.rowId))) {
+        toggleVisibleRowsSelection: function() {
+            const filteredRows = this.getFilteredAndSortedRows();
+            if (filteredRows.length === 0) {
+                this.updateSelectHeaderCheckbox();
+                return;
+            }
+
+            if (filteredRows.every(row => this.isRowSelected(row.rowId))) {
                 this.deselectAll();
                 this.onSelectedRowChanged();
             }
@@ -1932,11 +1939,11 @@ window.qBittorrent.DynamicTable = (function() {
         },
 
         updateSelectHeaderCheckbox: function() {
-            const visibleRows = this.tableBody ? this.tableBody.getElements('tr[data-row-id]').filter(tr => tr.getStyle('display') !== 'none') : [];
-            const selectedCount = visibleRows.filter(tr => this.isRowSelected(tr.rowId)).length;
+            const filteredRows = this.tableBody ? this.getFilteredAndSortedRows() : [];
+            const selectedCount = filteredRows.filter(row => this.isRowSelected(row.rowId)).length;
             $$('input.torrentSelectionHeaderCheckbox').each(function(checkbox) {
-                checkbox.checked = (visibleRows.length > 0) && (selectedCount === visibleRows.length);
-                checkbox.indeterminate = (selectedCount > 0) && (selectedCount < visibleRows.length);
+                checkbox.checked = (filteredRows.length > 0) && (selectedCount === filteredRows.length);
+                checkbox.indeterminate = (selectedCount > 0) && (selectedCount < filteredRows.length);
             });
         },
 

@@ -38,6 +38,8 @@ if (window.qBittorrent === undefined) {
 }
 
 window.qBittorrent.DynamicTable = (function() {
+    const initialPropertiesHeight = localStorage.getItem('properties_height_rel');
+
     const exports = function() {
         return {
             TorrentsTable: TorrentsTable,
@@ -63,6 +65,26 @@ window.qBittorrent.DynamicTable = (function() {
         if (val1 > val2)
             return 1;
         return 0;
+    };
+
+    const restorePropertiesPanelHeight = (saved, current, viewportHeight, transfer, properties) => {
+        if ((saved === null) || (saved !== current) || !transfer || !properties
+            || properties.getParent().hasClass('collapsed')) return;
+        const ratio = Number(saved);
+        const transferHeight = parseFloat(transfer.getStyle('height'));
+        const propertiesHeight = parseFloat(properties.getStyle('height'));
+        const currentOuterHeight = properties.getSize().y;
+        if (!Number.isFinite(ratio) || ratio <= 0 || ratio >= 1 || !Number.isFinite(viewportHeight)
+            || !Number.isFinite(transferHeight) || !Number.isFinite(propertiesHeight)
+            || !Number.isFinite(currentOuterHeight) || transferHeight <= 0 || propertiesHeight <= 0) return;
+        const desiredHeight = propertiesHeight + ratio * viewportHeight - currentOuterHeight;
+        const boundedHeight = Math.max(0, Math.min(transferHeight + propertiesHeight, desiredHeight));
+        const difference = boundedHeight - propertiesHeight;
+        if (Math.abs(difference) < 1) return;
+        properties.setStyle('height', boundedHeight);
+        transfer.setStyle('height', transferHeight - difference);
+        transfer.fireEvent('resize');
+        properties.fireEvent('resize');
     };
 
     let DynamicTableHeaderContextMenuClass = null;
@@ -954,6 +976,8 @@ window.qBittorrent.DynamicTable = (function() {
             }
             this.parent(dynamicTableDivId, dynamicTableFixedHeaderDivId, contextMenu);
             MochaUI.Desktop.setDesktopSize();
+            restorePropertiesPanelHeight(initialPropertiesHeight, localStorage.getItem('properties_height_rel'),
+                Window.getSize().y, $('transferList'), $('propertiesPanel'));
             if (this.sortedColumn === 'select')
                 this.setSortedColumn('name');
             const button = new Element('a', { 'class': 'divider', role: 'button', tabindex: '0' });

@@ -964,7 +964,7 @@ window.qBittorrent.DynamicTable = (function() {
                     '#torrentsTableDiv tr.contentGroupHeader:not(.selected):not(:hover){background-color:#ddd}' +
                     '#torrentsTableDiv tr.contentGroupChildOdd:not(.selected):not(:hover){background-color:#fff}' +
                     '#torrentsTableDiv tr.contentGroupChildEven:not(.selected):not(:hover){background-color:#eee}' +
-                    '#torrentsTableDiv td.contentGroupChildName{padding-left:20px}'
+                    '#torrentsTableDiv table.dynamicTable td.contentGroupChildName{padding-left:20px}'
                 }).inject(document.head);
             }
             $('mochaToolbar').setStyle('margin-top', '12px');
